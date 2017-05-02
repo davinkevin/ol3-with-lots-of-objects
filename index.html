@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OL3 over-load !!</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ol3/4.1.0/ol.css" />
+</head>
+<body>
+<div id="map" class="map"></div>
+Feature count: <span id="featureCount">0</span>
+<input type="button" id="add" value="Add 50 000 features" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ol3/4.1.0/ol.js"></script>
+<script>
+  var iconInfo = [{
+    points: 4,
+    radius: 3,
+    radius2: 0,
+    angle: 0
+  }, {
+    points: 4,
+    radius: 5,
+    radius2: 0,
+    angle: 0
+  }, {
+    points: 4,
+    radius: 8,
+    radius2: 0,
+    angle: 0
+  }, {
+    points: 4,
+    radius: 12,
+    radius2: 0,
+    angle: 0
+  }];
+
+  var i;
+
+  var iconCount = iconInfo.length;
+  var icons = new Array(iconCount);
+  for (i = 0; i < iconCount; ++i) {
+    var info = iconInfo[i];
+    icons[i] = new ol.style.RegularShape({
+      points: info.points,
+      radius: info.radius,
+      radius2: info.radius2,
+      angle: info.angle,
+      fill: new ol.style.Fill({
+        color: 'rgba(0, 0, 0, 0.9)'
+      }),
+      stroke: new ol.style.Stroke({
+        width: 2,
+        color: 'rgba(0, 0, 0, 0.9)'
+      }),
+    });
+  }
+
+
+  var vectorSource = new ol.source.Vector();
+  var vector = new ol.layer.Vector({
+    source: vectorSource,
+    style: function (feature, resolution) {
+      var i = feature.getProperties().styleId;
+      return [new ol.style.Style({
+        image: icons[i]
+      })];
+    }
+  });
+
+  vectorSource.on('change', function () {
+    document.getElementById('featureCount').innerHTML = vectorSource.getFeatures().length
+  });
+
+  document.getElementById('add').addEventListener('click', function (evt) {
+    var featureCount = 50000;
+    var features = new Array(featureCount);
+    var feature, geometry;
+    var e = 25000000;
+    for (i = 0; i < featureCount; ++i) {
+      geometry = new ol.geom.Point(
+        [2 * e * Math.random() - e, 2 * e * Math.random() - e]);
+      feature = new ol.Feature(geometry);
+      feature.setProperties({
+        'styleId': i % (iconCount - 1)
+      });
+      features[i] = feature;
+    }
+    vectorSource.addFeatures(features);
+  });
+
+  var osm = new ol.layer.Tile({
+    source: new ol.source.OSM()
+  });
+
+  var map = new ol.Map({
+    layers: [osm, vector],
+    target: document.getElementById('map'),
+    view: new ol.View({
+      center: [0, 0],
+      zoom: 5
+    })
+  });
+
+  map.on('pointermove', function (evt) {
+    if (evt.dragging) {
+      return;
+    }
+    var pixel = map.getEventPixel(evt.originalEvent);
+    var hit = map.hasFeatureAtPixel(pixel);
+    map.getTarget().style.cursor = hit ? 'pointer' : '';
+  });
+
+
+</script>
+</body>
+</html>
